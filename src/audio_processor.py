@@ -2,9 +2,7 @@ import os
 import logging
 import tempfile
 from typing import Optional
-
-# Importar whisper.cpp
-import pywhispercpp
+from pywhispercpp.model import Model
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -29,7 +27,7 @@ class AudioProcessor:
         try:
             logger.info(f"Loading Whisper.cpp model: {model_size}")
             # Whisper.cpp descargará automáticamente el modelo si no existe
-            self.model = pywhispercpp.Whisper(model_size)
+            self.model = Model(model_size, n_threads=2)
             logger.info("Whisper.cpp model loaded successfully")
             return True
         except Exception as e:
@@ -59,16 +57,17 @@ class AudioProcessor:
         
         try:
             # Configurar opciones de transcripción
-            options = {
-                "language": language if language else None
-            }
+            options = {}
+            if language:
+                options["language"] = language
             
             # Transcribir el audio
             logger.info(f"Transcribing audio file: {audio_file_path}")
-            result = self.model.transcribe(audio_file_path)
+            segments = self.model.transcribe(audio_file_path, **options)
             
-            # Devolver el texto transcrito
-            transcribed_text = result.strip()
+            # Combinar todos los segmentos en un solo texto
+            transcribed_text = " ".join([segment.text for segment in segments]).strip()
+            
             logger.info(f"Transcription successful: {transcribed_text[:30]}...")
             return transcribed_text
         except Exception as e:
