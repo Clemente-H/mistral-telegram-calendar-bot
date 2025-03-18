@@ -1,5 +1,5 @@
 python-telegram-bot==20.7
-mistralai==0.0.10
+mistralai
 python-dotenv==1.0.0
 google-auth==2.23.0
 google-auth-oauthlib==1.0.0

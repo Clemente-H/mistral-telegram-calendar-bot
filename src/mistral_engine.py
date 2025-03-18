@@ -4,8 +4,8 @@ import logging
 import datetime
 from typing import Dict, Any, Optional, Union, Tuple
 
-from mistralai.client import MistralClient
-from mistralai.models.chat_completion import ChatMessage
+# Actualización: usar la biblioteca más reciente
+from mistralai import Mistral 
 from PIL import Image
 import io
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 class MistralEngine:
     def __init__(self):
         """Initializes the processing engine with Mistral AI."""
-        self.client = MistralClient(api_key=MISTRAL_API_KEY)
+        self.client = Mistral(api_key=MISTRAL_API_KEY)
         self.model = MISTRAL_MODEL
     
     def _call_mistral(self, prompt: str) -> str:
@@ -37,8 +37,9 @@ class MistralEngine:
             str: The response from Mistral
         """
         try:
-            messages = [ChatMessage(role="user", content=prompt)]
-            response = self.client.chat(
+            # Formato actualizado para mensajes
+            messages = [{"role": "user", "content": prompt}]
+            response = self.client.chat.complete(
                 model=self.model,
                 messages=messages,
             )
@@ -46,7 +47,7 @@ class MistralEngine:
         except Exception as e:
             logger.error(f"Error calling Mistral: {str(e)}")
             return ""
-    
+        
     def _call_mistral_with_image(self, prompt: str, image_data: bytes) -> str:
         """
         Makes a call to the Mistral API with an image.
@@ -62,21 +63,29 @@ class MistralEngine:
             # Convert image to base64
             base64_image = base64.b64encode(image_data).decode('utf-8')
             
-            # Create message with the image
-            message_content = [
-                {"type": "text", "text": prompt},
+            # Create the message structure according to Mistral's documentation
+            messages = [
                 {
-                    "type": "image_url", 
-                    "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": f"data:image/jpeg;base64,{base64_image}"
+                        }
+                    ]
                 }
             ]
             
-            messages = [ChatMessage(role="user", content=message_content)]
-            
-            response = self.client.chat(
+            # Call the API with the formatted message
+            response = self.client.chat.complete(
                 model=self.model,
-                messages=messages,
+                messages=messages
             )
+            
             return response.choices[0].message.content
         except Exception as e:
             logger.error(f"Error calling Mistral with image: {str(e)}")
@@ -237,6 +246,9 @@ class MistralEngine:
             
             # Determine intent based on extraction confidence
             confidence = extracted_info.get('confidence', 0)
+            # Ensure confidence is a number, not None
+            if confidence is None:
+                confidence = 0
             intent_data = {
                 'intent': 'add_event' if confidence >= 0.5 else 'other',
                 'confidence': confidence,
