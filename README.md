@@ -47,7 +47,15 @@ The bot is built with a modular architecture:
    pip install -r requirements.txt
    ```
 
-3. Create a `.env` file with your credentials:
+3. **Important:** Obtain the Google Calendar API credentials:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project (or select an existing one)
+   - Enable the Google Calendar API
+   - Create OAuth 2.0 Client credentials
+   - Download the JSON file and rename it to `credentials.json`
+   - Place it in the project root directory
+
+4. Create a `.env` file with your credentials:
   ```bash
   cp .env.example .env
    ```
