@@ -1,20 +1,20 @@
 import os
 import logging
 import tempfile
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, 
     CommandHandler, 
-    MessageHandler, 
-    CallbackQueryHandler,
+    MessageHandler,
     filters, 
     ContextTypes
 )
 
 from config import TELEGRAM_TOKEN
 from src.mistral_engine import MistralEngine
+from src.audio_processor import AudioProcessor
 from src.calendar_events import create_event, generate_calendar_link
 
 # Configure logging
@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 
 # Initialize Mistral engine
 mistral_engine = MistralEngine()
+
+#Initialize Audio Processor
+audio_processor = AudioProcessor()
+audio_processor.load_model("tiny")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handles the /start command."""
@@ -88,7 +92,7 @@ async def process_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     user_id = update.effective_user.id
     
     # Let the user know we're processing
-    processing_message = await update.message.reply_text("Processing your audio...")
+    processing_message = await update.message.reply_text("Processing your audio message...")
     
     try:
         # Get the audio file
@@ -98,17 +102,40 @@ async def process_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         with tempfile.NamedTemporaryFile(delete=False, suffix='.ogg') as temp_file:
             await audio_file.download_to_drive(temp_file.name)
             
-            # To process the audio, we would need to transcribe it
-            # Mistral API doesn't directly support audio, so we would need to use an external service
-            # As an alternative, we can use the Mistral API with a note
-            message_text = "Voice message received. Transcription is not currently available."
+            # Transcribe audio using Whisper
+            transcription = audio_processor.transcribe_audio(temp_file.name)
             
-            # For now, we inform the user that the audio cannot be processed
-            await update.message.reply_text(
-                "I received your voice message, but I can't process it at the moment. "
-                "Please send your message as text."
-            )
-            await processing_message.delete()
+            if transcription:
+                # Log transcription result
+                logger.info(f"Audio transcription: {transcription}")
+                
+                # Notify user
+                await update.message.reply_text(f"I heard: \"{transcription}\"")
+                
+                # Process the transcription with Mistral
+                intent_data, extracted_info, _ = mistral_engine.process_message(transcription)
+                
+                # Handle based on the intent
+                if intent_data.get('intent') == 'add_event':
+                    await handle_add_event(update, context, extracted_info, processing_message)
+                elif intent_data.get('intent') == 'greet':
+                    await update.message.reply_text("Hello! How can I help you with your calendar today?")
+                    await processing_message.delete()
+                elif intent_data.get('intent') == 'help':
+                    await help_command(update, context)
+                    await processing_message.delete()
+                else:
+                    await update.message.reply_text(
+                        "I couldn't identify a calendar event in your message. "
+                        "Please try again with more specific details about the event."
+                    )
+                    await processing_message.delete()
+            else:
+                await update.message.reply_text(
+                    "Sorry, I couldn't transcribe your audio message. "
+                    "Please try again or send your message as text."
+                )
+                await processing_message.delete()
             
         # Delete the temporary file
         os.unlink(temp_file.name)
