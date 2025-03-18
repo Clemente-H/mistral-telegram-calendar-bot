@@ -4,7 +4,7 @@ import tempfile
 from typing import Optional
 
 # Importar whisper.cpp
-import whisper_cpp_python
+import pywhispercpp
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class AudioProcessor:
         try:
             logger.info(f"Loading Whisper.cpp model: {model_size}")
             # Whisper.cpp descargará automáticamente el modelo si no existe
-            self.model = whisper_cpp_python.Whisper(model_size)
+            self.model = pywhispercpp.Whisper(model_size)
             logger.info("Whisper.cpp model loaded successfully")
             return True
         except Exception as e:
