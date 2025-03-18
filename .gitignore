@@ -1,3 +1,5 @@
 .env
 extra/*
 credentials.json
+.DS_Store
+__pycache__/
