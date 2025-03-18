@@ -1,0 +1,30 @@
+# Entorno virtual
+venv/
+env/
+.env
+
+# Archivos de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+
+# Archivos de credenciales
+credentials.json
+token.json
+firebase-credentials.json
+
+# Archivos de Git
+.git
+.gitignore
+
+# Archivos de Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+
+# Otros archivos
+*.log
+.DS_Store
