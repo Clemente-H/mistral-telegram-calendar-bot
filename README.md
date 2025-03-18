@@ -81,16 +81,21 @@ The bot is built with a modular architecture:
 
 ## Deployment
 
-### Deploying to Sevalla
+> **Note:** Initially, this project was intended to run on Google Cloud Run (GCR), but to avoid adding billing information, I chose to use a free alternative instead - in this case, Railway.
 
-[Sevalla](https://app.sevalla.com/) is a platform that can host Docker containers. To deploy to Sevalla:
+### Deploying to Railway
 
-1. Build your Docker image locally
-2. Push it to a container registry (Docker Hub, GitHub Container Registry)
-3. In Sevalla, select the option to deploy from a container registry
-4. Point to your container's URL
-5. Configure environment variables for your Telegram token and Mistral API key
-6. Set up any persistent storage needed for credentials
+[Railway](https://railway.app/) provides a simple, free way to deploy your bot:
+
+1. Create an account on Railway.app
+2. Connect your GitHub repository
+3. Configure the environment variables:
+   - `TELEGRAM_TOKEN`
+   - `MISTRAL_API_KEY`
+   - `MISTRAL_MODEL`
+4. Railway will automatically build and deploy your Docker container
+5. Set up a volume or persistent storage for credentials if needed
+
 
 ### Other Deployment Options
 
@@ -98,7 +103,6 @@ The bot can also be deployed to:
 - Google Cloud Run
 - AWS ECS
 - Heroku
-- Railway
 - Render
 - Fly.io
 
@@ -203,3 +207,4 @@ You can extend the bot's capabilities by:
 - [Google Calendar API](https://developers.google.com/calendar) for calendar integration
 
 ---
+
