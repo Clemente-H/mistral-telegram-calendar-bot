@@ -14,8 +14,8 @@ from telegram.ext import (
 )
 
 from config import TELEGRAM_TOKEN
-from mistral_engine import MistralEngine
-from calendar_events import create_event, generate_calendar_link
+from src.mistral_engine import MistralEngine
+from src.calendar_events import create_event, generate_calendar_link
 
 # Configure logging
 logging.basicConfig(
