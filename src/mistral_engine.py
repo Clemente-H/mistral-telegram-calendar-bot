@@ -10,7 +10,7 @@ from PIL import Image
 import io
 
 from config import MISTRAL_API_KEY, MISTRAL_MODEL
-from prompts import (
+from src.prompts import (
     INTENT_DETECTION_PROMPT, 
     EVENT_EXTRACTION_PROMPT, 
     IMAGE_EXTRACTION_PROMPT,
