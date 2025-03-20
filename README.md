@@ -1,8 +1,6 @@
 # Mistral Telegram Calendar Bot
 
-A powerful Telegram bot that uses Mistral AI to intelligently detect user intent and create calendar events from text messages and images.
-
-![Calendar Bot Logo](https://via.placeholder.com/150?text=Calendar+Bot)
+A Telegram bot that uses Mistral AI to intelligently detect user intent and create calendar events from text messages and images.
 
 ## Features
 
@@ -21,6 +19,21 @@ The bot is built with a modular architecture:
 - **calendar_events.py**: Manages calendar event creation and link generation
 - **prompts.py**: Contains the prompts for the Mistral AI model
 - **utils.py**: Utility functions for data handling and formatting
+
+## Demo
+The bot is currently deployed on Railway. You can test it by searching for [@mistralcalendarassistant_bot] on Telegram
+
+## Architecture
+
+The bot follows a modular architecture for better maintainability and extensibility:
+
+- ```telegram_bot.py ```: Handles Telegram interactions and user messages
+- ```mistral_engine.py ```: Processes messages using Mistral AI to detect intent and extract information
+
+-  ```calendar_events.py ```: Manages calendar event creation and link generation
+-  ```audio_processor.py ```: Transcribes voice messages using Whisper.cpp
+-  ```prompts.py ```: Contains structured prompts for the Mistral AI model
+utils.py: Utility functions for data handling and formatting
 
 ## Prerequisites
 
@@ -67,7 +80,11 @@ The bot is built with a modular architecture:
    MISTRAL_API_KEY=your_mistral_api_key_here
    MISTRAL_MODEL=mistral-large-latest
    GOOGLE_CREDENTIALS_FILE=credentials.json
-   GOOGLE_TOKEN_FILE=token.json
+   ```
+
+5. Run the bot
+  ```bash
+  python telegram_bot.py
    ```
 
 ### Docker Setup
@@ -89,21 +106,7 @@ The bot is built with a modular architecture:
 
 ## Deployment
 
-> **Note:** Initially, this project was intended to run on Google Cloud Run (GCR), but to avoid adding billing information, I chose to use a free alternative instead - in this case, Railway.
-
-### Deploying to Railway
-
-[Railway](https://railway.app/) provides a simple, free way to deploy your bot:
-
-1. Create an account on Railway.app
-2. Connect your GitHub repository
-3. Configure the environment variables:
-   - `TELEGRAM_TOKEN`
-   - `MISTRAL_API_KEY`
-   - `MISTRAL_MODEL`
-4. Railway will automatically build and deploy your Docker container
-5. Set up a volume or persistent storage for credentials if needed
-
+The bot is designed to be easily deployable to various cloud platforms. Currenntly is deployed on [Railway](https://railway.app/) on the free tier.
 
 ### Other Deployment Options
 
@@ -157,56 +160,6 @@ The bot uses Mistral AI's image understanding capabilities to extract informatio
 - Flyers
 - Screenshots of event details
 - Digital invitations
-
-## Project Structure
-
-```
-mistral-telegram-calendar-bot/
-├── src/
-│   ├── calendar_events.py     # Calendar integration
-│   ├── config.py              # Configuration handling
-│   ├── mistral_engine.py      # Mistral AI processing
-│   ├── prompts.py             # Prompts for Mistral AI
-│   ├── telegram_bot.py        # Telegram bot functionality
-│   └── utils.py               # Utility functions
-├── test/
-│   ├── interactive_testing.ipynb  # Interactive notebook
-│   ├── simple_chatbot_test.py     # Simple test script
-│   ├── test_calendar_events.py    # Calendar tests
-│   ├── test_mistral_engine.py     # Mistral AI tests
-│   └── test_images/              # Sample images for testing
-├── .env                       # Environment variables
-├── .dockerignore              # Docker ignore file
-├── Dockerfile                 # Docker configuration
-├── LICENSE                    # License file
-├── README.md                  # This documentation
-└── requirements.txt           # Python dependencies
-```
-
-## Extending the Bot
-
-You can extend the bot's capabilities by:
-
-1. Adding new intent types in `prompts.py` and `mistral_engine.py`
-2. Implementing new calendar features in `calendar_events.py`
-3. Enhancing image processing in the `extract_from_image` method
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Telegram Connection Issues**:
-   - Verify your Telegram token is correct
-   - Ensure your bot has the proper permissions
-
-2. **Mistral AI Not Working**:
-   - Check your API key
-   - Verify the model name is correct
-
-3. **Calendar Link Generation Fails**:
-   - Ensure the extracted date/time format is correct
-   - Check if all required event fields are present
-
 
 ## Acknowledgements
 
