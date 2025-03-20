@@ -4,7 +4,6 @@ import logging
 import datetime
 from typing import Dict, Any, Optional, Union, Tuple
 
-# Actualización: usar la biblioteca más reciente
 from mistralai import Mistral 
 from PIL import Image
 import io

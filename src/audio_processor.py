@@ -26,7 +26,6 @@ class AudioProcessor:
         """
         try:
             logger.info(f"Loading Whisper.cpp model: {model_size}")
-            # Whisper.cpp descargará automáticamente el modelo si no existe
             self.model = Model(model_size, n_threads=2)
             logger.info("Whisper.cpp model loaded successfully")
             return True
@@ -56,16 +55,13 @@ class AudioProcessor:
             return None
         
         try:
-            # Configurar opciones de transcripción
             options = {}
             if language:
                 options["language"] = language
             
-            # Transcribir el audio
             logger.info(f"Transcribing audio file: {audio_file_path}")
             segments = self.model.transcribe(audio_file_path, **options)
             
-            # Combinar todos los segmentos en un solo texto
             transcribed_text = " ".join([segment.text for segment in segments]).strip()
             
             logger.info(f"Transcription successful: {transcribed_text[:30]}...")
