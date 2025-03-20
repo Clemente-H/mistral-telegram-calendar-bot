@@ -253,8 +253,8 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     except Exception as e:
         logger.error(f"Error sending error message: {str(e)}")
 
-def main() -> None:
-    """Main function to start the bot."""
+def create_application():
+    """Creates and configures the application."""
     # Create the application
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
@@ -270,8 +270,29 @@ def main() -> None:
     # Error handler
     application.add_error_handler(error_handler)
     
-    # Start the bot
-    application.run_polling()
+    return application
+
+def main() -> None:
+    """Main function to start the bot."""
+    application = create_application()
+    
+    # Check if we're in production or development
+    APP_URL = os.environ.get('APP_URL')
+    
+    if APP_URL:
+        # We're in production (Railway) - use webhook
+        PORT = int(os.environ.get('PORT', 8443))
+        logger.info(f"Starting webhook on port {PORT} with URL {APP_URL}")
+        application.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path=TELEGRAM_TOKEN,
+            webhook_url=f"{APP_URL}/{TELEGRAM_TOKEN}"
+        )
+    else:
+        # We're in development - use polling
+        logger.info("Starting polling (development mode)")
+        application.run_polling()
 
 if __name__ == '__main__':
     main()

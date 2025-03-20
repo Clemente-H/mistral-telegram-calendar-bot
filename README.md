@@ -106,9 +106,30 @@ utils.py: Utility functions for data handling and formatting
 
 ## Deployment
 
-The bot is designed to be easily deployable to various cloud platforms. Currenntly is deployed on [Railway](https://railway.app/) on the free tier.
+The bot is designed to be easily deployable to various cloud platforms. It automatically detects whether it's running in a local environment or production.
+Currenntly is deployed on [Railway](https://railway.app/) on the free tier.
 
-### Other Deployment Options
+### Local Development
+
+For local development, simply run the bot without setting the `APP_URL` environment variable:
+
+```bash
+python telegram_bot.py
+```
+
+The bot will automatically use polling mode when running locally.
+
+### Switching Between Environments
+
+The bot automatically detects which environment it's running in:
+
+- **With APP_URL**: Uses webhook mode (suitable for production)
+- **Without APP_URL**: Uses polling mode (suitable for development)
+
+This ensures you can develop locally with the same codebase that you deploy to production.
+
+
+### Alternative Deployment Options
 
 The bot can also be deployed to:
 - Google Cloud Run
