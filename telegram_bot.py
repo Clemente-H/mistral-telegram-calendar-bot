@@ -187,7 +187,7 @@ async def process_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         os.unlink(temp_file.name)
 
         if transcription:
-            await update.message.reply_text(f"I heard: \"{transcription}\""
+            await update.message.reply_text(f"I heard: \"{transcription}\"")
             intent_data, extracted_info, _ = mistral_engine.process_message(transcription)
             if intent_data.get('intent') == 'add_event':
                 await handle_add_event(update, context, extracted_info, processing_message)
