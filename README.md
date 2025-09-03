@@ -10,16 +10,6 @@ A Telegram bot that uses Mistral AI to intelligently detect user intent and crea
 - **Google Calendar Integration**: Generates links to add events directly to users' Google Calendars
 - **Containerized**: Easy to deploy anywhere Docker is supported
 
-## Architecture
-
-The bot is built with a modular architecture:
-
-- **telegram_bot.py**: Handles Telegram interactions and user messages
-- **mistral_engine.py**: Processes messages using Mistral AI to detect intent and extract information
-- **calendar_events.py**: Manages calendar event creation and link generation
-- **prompts.py**: Contains the prompts for the Mistral AI model
-- **utils.py**: Utility functions for data handling and formatting
-
 ## Demo
 The bot is currently deployed on Railway. You can test it by searching for [@mistralcalendarassistant_bot] on Telegram
 
@@ -145,7 +135,7 @@ The project includes comprehensive testing tools:
 1. An interactive Jupyter notebook for exploring functionality:
    ```bash
    cd test
-   jupyter notebook interactive_testing.ipynb
+   jupyter notebook testing_and_debugging.ipynb
    ```
 
 2. A simple console-based test script:
