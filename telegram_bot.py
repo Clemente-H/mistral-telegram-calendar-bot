@@ -158,10 +158,6 @@ async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         reply_markup=reply_markup
     )
 
-    # --- Temporary Debugging Line ---
-    # Send the URL as a separate message to inspect it.
-    await update.message.reply_text(f"DEBUG: Authorization URL:\n`{authorization_url}`", parse_mode='Markdown')
-
 
 async def disconnect_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Disconnects the user\'s Google Calendar."""
