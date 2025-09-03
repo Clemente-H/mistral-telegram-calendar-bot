@@ -186,12 +186,11 @@ async def process_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         
         if intent_data.get('intent') == 'add_event':
             await handle_add_event(update, context, extracted_info, processing_message)
-        # ... (other intents)
         else:
-            await update.message.reply_text("I\'m not sure what you mean. Please try to be more specific.")
-        await processing_message.delete()
+            await update.message.reply_text("I'm not sure what you mean. Please try to be more specific.")
+            await processing_message.delete()
     except Exception as e:
-        logger.error(f"Error processing text: {e}")
+        logger.error(f"Error processing text: {e}", exc_info=True)
         await processing_message.delete()
         await update.message.reply_text("Sorry, an error occurred while processing your message.")
 
@@ -205,17 +204,18 @@ async def process_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         os.unlink(temp_file.name)
 
         if transcription:
-            await update.message.reply_text(f"I heard: \"{transcription}\"")
+            await update.message.reply_text(f'I heard: "{transcription}"')
             intent_data, extracted_info, _ = mistral_engine.process_message(transcription)
             if intent_data.get('intent') == 'add_event':
                 await handle_add_event(update, context, extracted_info, processing_message)
             else:
-                await update.message.reply_text("I couldn\'t identify an event in your audio.")
+                await update.message.reply_text("I couldn't identify an event in your audio.")
+                await processing_message.delete()
         else:
-            await update.message.reply_text("I couldn\'t transcribe your audio.")
-        await processing_message.delete()
+            await update.message.reply_text("I couldn't transcribe your audio.")
+            await processing_message.delete()
     except Exception as e:
-        logger.error(f"Error processing audio: {e}")
+        logger.error(f"Error processing audio: {e}", exc_info=True)
         await processing_message.delete()
         await update.message.reply_text("Sorry, an error occurred while processing your audio.")
 
@@ -234,10 +234,10 @@ async def process_image(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         if intent_data.get('intent') == 'add_event':
             await handle_add_event(update, context, extracted_info, processing_message)
         else:
-            await update.message.reply_text("I couldn\'t detect an event in the image.")
-        await processing_message.delete()
+            await update.message.reply_text("I couldn't detect an event in the image.")
+            await processing_message.delete()
     except Exception as e:
-        logger.error(f"Error processing image: {e}")
+        logger.error(f"Error processing image: {e}", exc_info=True)
         await processing_message.delete()
         await update.message.reply_text("Sorry, an error occurred while processing your image.")
 
