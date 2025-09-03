@@ -4,6 +4,7 @@ import tempfile
 import secrets
 from typing import Dict, Any
 from urllib.parse import urljoin
+import asyncio
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -292,29 +293,52 @@ def create_application() -> Application:
     
     return application
 
-def main() -> None:
+async def main() -> None:
+    """Initializes the bot and starts the webserver or polling."""
     application = create_application()
     
     APP_URL = os.environ.get('APP_URL')
     if APP_URL:
+        # --- Production Mode (Webhook) ---
         PORT = int(os.environ.get('PORT', 8080))
         
+        # Initialize the bot application
+        await application.initialize()
+        
+        # Set the webhook
+        await application.bot.set_webhook(
+            url=f"{APP_URL}/{TELEGRAM_TOKEN}",
+            allowed_updates=Update.ALL_TYPES
+        )
+        
+        # Create the aiohttp web application
         web_app = web.Application()
-        web_app.add_routes([web.get('/oauth2callback', oauth_callback)])
         web_app['bot_app'] = application
         
-        logger.info(f"Starting webhook and web server on port {PORT}")
-        application.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path=TELEGRAM_TOKEN,
-            webhook_url=f"{APP_URL}/{TELEGRAM_TOKEN}",
-            web_app=web_app
-        )
+        # Add handlers for the bot webhook and the OAuth callback
+        web_app.router.add_post(f"/{TELEGRAM_TOKEN}", application.webhook_handler)
+        web_app.router.add_get('/oauth2callback', oauth_callback)
+        
+        # Start the web server
+        runner = web.AppRunner(web_app)
+        await runner.setup()
+        site = web.TCPSite(runner, host="0.0.0.0", port=PORT)
+        await site.start()
+        
+        logger.info(f"Web server started on port {PORT}")
+        
+        # Run the bot application
+        await application.start()
+        
+        # Keep the script running
+        while True:
+            await asyncio.sleep(3600)
+            
     else:
-        logger.info("Starting polling (development mode)")
-        logger.warning("OAuth callback will not work in polling mode without a tunnel like ngrok.")
-        application.run_polling()
+        # --- Development Mode (Polling) ---
+        logger.info("Starting bot in polling mode.")
+        await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-    main()
+    import asyncio
+    asyncio.run(main())
