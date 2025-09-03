@@ -5,6 +5,7 @@ import secrets
 from typing import Dict, Any
 from urllib.parse import urljoin
 import asyncio
+import json
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -49,6 +50,29 @@ def get_redirect_uri() -> str:
         return "http://localhost:8080/oauth2callback"
     return urljoin(app_url, '/oauth2callback')
 
+def get_google_flow(redirect_uri: str) -> Flow:
+    """
+    Creates a Google OAuth Flow object, loading credentials from an environment
+    variable in production or a local file in development.
+    """
+    creds_json_str = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+    if creds_json_str:
+        # Production: Load from environment variable
+        client_config = json.loads(creds_json_str)
+        return Flow.from_client_config(
+            client_config, scopes=GOOGLE_SCOPES, redirect_uri=redirect_uri
+        )
+    else:
+        # Development: Load from local file
+        if not os.path.exists(GOOGLE_CREDENTIALS_FILE):
+            raise FileNotFoundError(
+                f"{GOOGLE_CREDENTIALS_FILE} not found. Please ensure it is in the root directory "
+                "or set GOOGLE_CREDENTIALS_JSON environment variable."
+            )
+        return Flow.from_client_secrets_file(
+            GOOGLE_CREDENTIALS_FILE, scopes=GOOGLE_SCOPES, redirect_uri=redirect_uri
+        )
+
 async def oauth_callback(request: web.Request) -> web.Response:
     """
     Handles the redirect from Google after user authorization.
@@ -64,11 +88,7 @@ async def oauth_callback(request: web.Request) -> web.Response:
 
         user_id = oauth_states.pop(state)
         
-        flow = Flow.from_client_secrets_file(
-            GOOGLE_CREDENTIALS_FILE,
-            scopes=GOOGLE_SCOPES,
-            redirect_uri=get_redirect_uri()
-        )
+        flow = get_google_flow(get_redirect_uri())
         
         flow.fetch_token(authorization_response=str(request.url))
         creds = flow.credentials
@@ -95,7 +115,7 @@ async def oauth_callback(request: web.Request) -> web.Response:
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_name = update.effective_user.first_name
     await update.message.reply_text(
-        f"Hello {user_name}! I\'m your calendar assistant.\n\n"
+        f"Hello {user_name}! I'm your calendar assistant.\n\n"
         f"To get started, connect your Google Calendar using the /connect command.\n\n"
         f"Then, you can ask me things like 'Remind me about the meeting with John on Friday at 3 PM' "
         f"or send me an image of an event."
@@ -103,7 +123,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        "I can help you manage your calendar. Here\'s what you can do:\n\n"
+        "I can help you manage your calendar. Here's what you can do:\n\n"
         "1. Connect your calendar with /connect.\n"
         "2. Send me a text, audio, or image with event information.\n"
         "3. Disconnect your calendar at any time with /disconnect.\n"
@@ -111,7 +131,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     )
 
 async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Starts the OAuth2 flow to connect a user\'s Google Calendar."""
+    """Starts the OAuth2 flow to connect a user's Google Calendar."""
     user_id = str(update.effective_user.id)
     
     if database.get_creds(user_id):
@@ -119,11 +139,7 @@ async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
                                       "If you want to use a different account, please /disconnect first.")
         return
 
-    flow = Flow.from_client_secrets_file(
-        GOOGLE_CREDENTIALS_FILE,
-        scopes=GOOGLE_SCOPES,
-        redirect_uri=get_redirect_uri()
-    )
+    flow = get_google_flow(get_redirect_uri())
     
     flow.access_type = 'offline'
     flow.prompt = 'consent'
@@ -141,6 +157,7 @@ async def connect_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         "Please click the button below to authorize access to your Google Calendar.",
         reply_markup=reply_markup
     )
+
 
 async def disconnect_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Disconnects the user\'s Google Calendar."""
@@ -265,30 +282,50 @@ async def handle_add_event(update: Update, context: ContextTypes.DEFAULT_TYPE, e
     await processing_message.delete()
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error(f"Error: {context.error} - Update: {update}")
+    """Log the error and send a telegram message to notify the user."""
+    logger.error(f"Error: {context.error} - Update: {update}", exc_info=context.error)
     if update and update.effective_chat:
         await context.bot.send_message(
             chat_id=update.effective_chat.id,
-            text="An unexpected error occurred. Please try again."
+            text="An unexpected error occurred. Please try again later."
         )
 
 # --- Application Setup and Main ---
 
+async def telegram_webhook_handler(request: web.Request) -> web.Response:
+    """Handles incoming Telegram updates by parsing them and passing them to the application."""
+    application = request.app['bot_app']
+    try:
+        data = await request.json()
+        update = Update.de_json(data, application.bot)
+        await application.process_update(update)
+        return web.Response()
+    except json.JSONDecodeError:
+        logger.warning("Received invalid JSON in webhook")
+        return web.Response(status=400)
+    except Exception as e:
+        logger.error(f"Error in webhook handler: {e}", exc_info=True)
+        return web.Response(status=500)
+
 def create_application() -> Application:
+    """Creates and configures the Telegram bot application."""
     builder = Application.builder().token(TELEGRAM_TOKEN)
     builder.pool_timeout(3600).get_updates_pool_timeout(3600)
     application = builder.build()
     
+    # Command handlers
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("connect", connect_command))
     application.add_handler(CommandHandler("disconnect", disconnect_command))
     application.add_handler(CommandHandler("status", status_command))
     
+    # Message handlers
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_text))
     application.add_handler(MessageHandler(filters.PHOTO, process_image))
     application.add_handler(MessageHandler(filters.VOICE, process_audio))
     
+    # Error handler
     application.add_error_handler(error_handler)
     
     return application
@@ -302,10 +339,7 @@ async def main() -> None:
         # --- Production Mode (Webhook) ---
         PORT = int(os.environ.get('PORT', 8080))
         
-        # Initialize the bot application
         await application.initialize()
-        
-        # Set the webhook
         await application.bot.set_webhook(
             url=f"{APP_URL}/{TELEGRAM_TOKEN}",
             allowed_updates=Update.ALL_TYPES
@@ -316,7 +350,7 @@ async def main() -> None:
         web_app['bot_app'] = application
         
         # Add handlers for the bot webhook and the OAuth callback
-        web_app.router.add_post(f"/{TELEGRAM_TOKEN}", application.webhook_handler)
+        web_app.router.add_post(f"/{TELEGRAM_TOKEN}", telegram_webhook_handler)
         web_app.router.add_get('/oauth2callback', oauth_callback)
         
         # Start the web server
@@ -327,7 +361,6 @@ async def main() -> None:
         
         logger.info(f"Web server started on port {PORT}")
         
-        # Run the bot application
         await application.start()
         
         # Keep the script running
@@ -340,5 +373,4 @@ async def main() -> None:
         await application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
-    import asyncio
     asyncio.run(main())
